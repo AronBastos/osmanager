@@ -58,7 +58,7 @@ Tendo problemas? Consulte os guias de solução:
 
 - **[Links Úteis](./referencias/links-uteis.md)** - Documentação oficial, tutoriais, ferramentas
 - **[Glossário](./referencias/glossario.md)** - Termos e abreviações usadas
-- **[Changelog](./referencias/changelog.md)** - Histórico de alterações
+- **[Changelog](./referencias/CHANGELOG.md)** - Histórico de alterações
 
 ---
 

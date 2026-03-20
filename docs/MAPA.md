@@ -185,7 +185,7 @@ docs/
 └── referencias/                 ◄─ REFERÊNCIAS
     ├── links-uteis.md           • Documentação oficial
     ├── glossario.md             • Termos técnicos
-    └── changelog.md             • Histórico de mudanças
+    └── CHANGELOG.md             • Histórico de mudanças
 ```
 
 ---
@@ -291,4 +291,3 @@ Você vai acessar muito! 📌
 **Status**: ✅ Completo e funcional
 
 **Próximo**: [README.md](./README.md) ← Comece por aqui!
-

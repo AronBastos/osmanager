@@ -141,7 +141,7 @@ Este é um arquivo que agrupa todas as soluções criadas para o projeto. **Atua
   - Abreviações
   - Conceitos
 
-- **[Changelog](./referencias/changelog.md)**
+- **[Changelog](./referencias/CHANGELOG.md)**
   - Histórico de mudanças
   - Versões
   - Features adicionadas
