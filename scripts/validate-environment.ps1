@@ -34,9 +34,9 @@ Write-Host ""
 
 # 3. Tomcat
 Write-Host "3. Verificando Tomcat..." -ForegroundColor Yellow
-if (Test-Path "C:\apache-tomcat\bin\startup.bat") {
-    Write-Host "   OK - Tomcat encontrado em C:\apache-tomcat" -ForegroundColor $SUCCESS
-    if (Test-Path "C:\apache-tomcat\bin\setenv.bat") {
+if (Test-Path "C:\WorkSpace\ApacheTomCat\bin\startup.bat") {
+    Write-Host "   OK - Tomcat encontrado em C:\WorkSpace\ApacheTomCat" -ForegroundColor $SUCCESS
+    if (Test-Path "C:\WorkSpace\ApacheTomCat\bin\setenv.bat") {
         Write-Host "   OK - setenv.bat configurado" -ForegroundColor $SUCCESS
     } else {
         Write-Host "   AVISO - setenv.bat nao encontrado" -ForegroundColor $WARNING

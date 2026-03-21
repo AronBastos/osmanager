@@ -35,10 +35,15 @@ Tomcat não instalado
 ```
 
 **Ação:**
-1. Baixe Tomcat 10: https://tomcat.apache.org/download-10.cgi
-2. Descompacte em: `C:\apache-tomcat`
-3. Configure setenv.bat com Java 17
-4. Inicie: `C:\apache-tomcat\bin\startup.bat`
+1. Verifique se Tomcat 9 está em: `C:\WorkSpace\ApacheTomCat`
+2. Se estiver em outro local, atualize os scripts
+3. Crie `setenv.bat` em `C:\WorkSpace\ApacheTomCat\bin\` com:
+   ```
+   @echo off
+   set JAVA_HOME=C:\WorkSpace\Java 17
+   set CATALINA_HOME=C:\WorkSpace\ApacheTomCat
+   ```
+4. Inicie: `C:\WorkSpace\ApacheTomCat\bin\startup.bat`
 
 ---
 

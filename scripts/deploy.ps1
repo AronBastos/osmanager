@@ -6,7 +6,7 @@ param(
     [string]$env = "development",
 
     [Parameter(Mandatory=$false)]
-    [string]$tomcatPath = "C:\apache-tomcat"
+    [string]$tomcatPath = "C:\WorkSpace\ApacheTomCat"
 )
 
 Write-Host "================================================" -ForegroundColor Cyan
@@ -84,4 +84,3 @@ if (Test-Path "$tomcatPath\webapps") {
         Write-Host "Reinicie o Tomcat para aplicar as alterações" -ForegroundColor Cyan
     }
 }
-

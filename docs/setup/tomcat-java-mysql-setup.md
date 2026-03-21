@@ -1,7 +1,7 @@
-# Guia Completo: Configurar Tomcat 10 + Java 17 + MySQL 8
+# Guia Completo: Configurar Tomcat 9 + Java 17 + MySQL 8
 
 ## 🎯 Objetivo
-Configurar ambiente profissional com Java 17, Tomcat 10 e MySQL 8 para deploy do OSManager.
+Configurar ambiente profissional com Java 17, Tomcat 9 e MySQL 8 para deploy do OSManager.
 
 ---
 
@@ -52,24 +52,24 @@ Java(TM) SE Runtime Environment (build 17.x.x+x)
 
 ---
 
-## 2️⃣ INSTALAR TOMCAT 10
+## 2️⃣ INSTALAR TOMCAT 9
 
 ### Download
 ```
-https://tomcat.apache.org/download-10.cgi
+https://tomcat.apache.org/download-90.cgi
 ```
 
 ### Windows - Passo a Passo
 
 1. **Baixe o arquivo**
-   - Apache Tomcat 10.1.x - ZIP file
+   - Apache Tomcat 9.x.x - ZIP file
 
 2. **Descompacte**
-   - Extraia para: `C:\apache-tomcat`
+   - Extraia para: `C:\WorkSpace\ApacheTomCat`
 
 3. **Estrutura esperada**
    ```
-   C:\apache-tomcat\
+   C:\WorkSpace\ApacheTomCat\
    ├── bin/         ← Scripts de inicialização
    ├── conf/        ← Configurações
    ├── lib/         ← Bibliotecas
@@ -82,14 +82,14 @@ https://tomcat.apache.org/download-10.cgi
 
 **Criar arquivo setenv.bat:**
 
-1. Abra: `C:\apache-tomcat\bin\`
+1. Abra: `C:\WorkSpace\ApacheTomCat\bin\`
 2. Crie arquivo: `setenv.bat`
 3. Adicione conteúdo:
 
 ```batch
 @echo off
 set JAVA_HOME=C:\WorkSpace\Java 17
-set CATALINA_HOME=C:\apache-tomcat
+set CATALINA_HOME=C:\WorkSpace\ApacheTomCat
 ```
 
 4. Salve e feche
@@ -98,12 +98,12 @@ set CATALINA_HOME=C:\apache-tomcat
 
 **Opção A: Direto pelo Windows Explorer**
 ```
-C:\apache-tomcat\bin\startup.bat
+C:\WorkSpace\ApacheTomCat\bin\startup.bat
 ```
 
 **Opção B: PowerShell**
 ```powershell
-C:\apache-tomcat\bin\startup.bat
+C:\WorkSpace\ApacheTomCat\bin\startup.bat
 # Aguarde aparecer: "Tomcat started"
 ```
 
@@ -119,7 +119,7 @@ http://localhost:8080
 ### Parar Tomcat
 
 ```powershell
-C:\apache-tomcat\bin\shutdown.bat
+C:\WorkSpace\ApacheTomCat\bin\shutdown.bat
 ```
 
 ---
@@ -201,16 +201,16 @@ target/osmanager-1.0-SNAPSHOT.war
 
 ```powershell
 # 1. Parar Tomcat
-C:\apache-tomcat\bin\shutdown.bat
+C:\WorkSpace\ApacheTomCat\bin\shutdown.bat
 
 # 2. Copiar WAR
-Copy-Item "target/osmanager-1.0-SNAPSHOT.war" "C:\apache-tomcat\webapps\ROOT.war"
+Copy-Item "target/osmanager-1.0-SNAPSHOT.war" "C:\WorkSpace\ApacheTomCat\webapps\ROOT.war"
 
 # 3. Iniciar Tomcat
-C:\apache-tomcat\bin\startup.bat
+C:\WorkSpace\ApacheTomCat\bin\startup.bat
 
 # 4. Aguardar deploy
-# Deve criar pasta: C:\apache-tomcat\webapps\ROOT\
+# Deve criar pasta: C:\WorkSpace\ApacheTomCat\webapps\ROOT\
 ```
 
 ### Deploy (Opção B: Script)
@@ -237,14 +237,14 @@ http://localhost:8080
 # Verificar JAVA_HOME
 echo $env:JAVA_HOME
 
-# Deve mostrar: C:\Program Files\Java\jdk-17
+# Deve mostrar: C:\WorkSpace\Java 17
 ```
 
 ### "Port 8080 already in use"
 **Causa:** Outra aplicação usando port 8080
 **Solução:**
 ```powershell
-# Mudar port no: C:\apache-tomcat\conf\server.xml
+# Mudar port no: C:\WorkSpace\ApacheTomCat\conf\server.xml
 # Linha com: port="8080"
 # Alterar para: port="8081"
 
@@ -267,10 +267,10 @@ Start-Service MySQL80
 **Solução:**
 ```powershell
 # Verificar logs
-Get-Content C:\apache-tomcat\logs\catalina.out
+Get-Content C:\WorkSpace\ApacheTomCat\logs\catalina.out
 
 # Deletar cache e tentar novamente
-Remove-Item C:\apache-tomcat\webapps\ROOT -Recurse
+Remove-Item C:\WorkSpace\ApacheTomCat\webapps\ROOT -Recurse
 ```
 
 ---
@@ -286,7 +286,7 @@ Write-Host "✅ Verificando ambiente..."
 java -version
 
 # Tomcat
-if (Test-Path "C:\apache-tomcat\bin\startup.bat") {
+if (Test-Path "C:\WorkSpace\ApacheTomCat\bin\startup.bat") {
     Write-Host "✅ Tomcat OK"
 }
 
@@ -301,7 +301,7 @@ Write-Host "✅ Tudo configurado!"
 ## 🚀 PRÓXIMOS PASSOS
 
 1. ✅ Instalar Java 17
-2. ✅ Instalar Tomcat 10
+2. ✅ Instalar Tomcat 9
 3. ✅ Configurar MySQL
 4. ✅ Deploy da aplicação
 5. ✅ Acessar em http://localhost:8080
@@ -309,4 +309,3 @@ Write-Host "✅ Tudo configurado!"
 ---
 
 **Última atualização:** 20 de Março de 2026
-
