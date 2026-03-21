@@ -67,4 +67,17 @@ net start MySQL80
 3. Validar MySQL
 4. Testar deploy da aplicação
 
+---
 
+# Documentação da Solução Docker
+
+## 📚 Arquivos Docker Criados
+
+1. **Dockerfile** - Imagem da aplicação com Java 17 e Tomcat 9
+2. **docker-compose.yml** - Orquestração completa (Tomcat + MySQL + phpMyAdmin)
+3. **docker-compose.dev.yml** - Configuração para desenvolvimento
+4. **.dockerignore** - Otimização do build
+5. **.env.example** - Variáveis de ambiente
+6. **scripts/docker-start.sh** - Script de inicialização (Linux/Mac)
+7. **scripts/docker-start.bat** - Script de inicialização (Windows)
+8. **docs/DOCKER_GUIDE.md** - Guia completo de uso

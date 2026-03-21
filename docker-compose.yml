@@ -1,0 +1,130 @@
+version: '3.9'
+
+services:
+  # ==========================================
+  # MySQL Database Service
+  # ==========================================
+  mysql:
+    image: mysql:8.0.36
+    container_name: osmanager-mysql
+    hostname: mysql
+    
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-osmanager}
+      MYSQL_USER: ${MYSQL_USER:-osmuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-osmuser_password}
+      MYSQL_INITDB_SKIP_TZINFO: 1
+      TZ: ${TZ:-"America/Sao_Paulo"}
+    
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/create_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    
+    networks:
+      - osmanager-network
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    
+    restart: unless-stopped
+
+  # ==========================================
+  # Tomcat Application Service
+  # ==========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_ENV: ${BUILD_ENV:-production}
+    
+    container_name: osmanager-app
+    hostname: app
+    
+    depends_on:
+      mysql:
+        condition: service_healthy
+    
+    environment:
+      # Java Options
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m -XX:+UseG1GC}
+      
+      # Database Configuration
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-osmanager}
+      DB_USERNAME: ${MYSQL_USER:-osmuser}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-osmuser_password}
+      
+      # Application Configuration
+      APP_ENV: ${APP_ENV:-production}
+      TZ: ${TZ:-"America/Sao_Paulo"}
+    
+    ports:
+      - "${TOMCAT_PORT:-8080}:8080"
+    
+    volumes:
+      - app_logs:/usr/local/tomcat/logs
+    
+    networks:
+      - osmanager-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    restart: unless-stopped
+
+  # ==========================================
+  # phpMyAdmin (Opcional)
+  # ==========================================
+  phpmyadmin:
+    image: phpmyadmin:5.2.1
+    container_name: osmanager-phpmyadmin
+    
+    depends_on:
+      - mysql
+    
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+    
+    ports:
+      - "${PHPMYADMIN_PORT:-8081}:80"
+    
+    networks:
+      - osmanager-network
+    
+    restart: unless-stopped
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  mysql_data:
+    driver: local
+  app_logs:
+    driver: local
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  osmanager-network:
+    driver: bridge
+
