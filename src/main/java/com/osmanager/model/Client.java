@@ -1,4 +1,4 @@
-package aron.bastos.osmanager.model;
+package com.osmanager.model;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -169,4 +169,3 @@ public class Client implements Serializable {
                 '}';
     }
 }
-

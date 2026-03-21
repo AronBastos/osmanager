@@ -22,8 +22,8 @@ https://www.oracle.com/java/technologies/downloads/#java17
    - Clique "Next" nas telas
 
 3. **Selecione destino** (importante!)
-   - Caminho: `C:\Program Files\Java\jdk-17`
-   - Deixe como padrão
+   - Caminho: `C:\WorkSpace\Java 17`
+   - Ajuste conforme sua instalação
 
 4. **Conclua a instalação**
    - Clique "Finish"
@@ -46,7 +46,7 @@ Java(TM) SE Runtime Environment (build 17.x.x+x)
 2. Clique: **Variáveis de Ambiente**
 3. Em **PATH** do usuário, adicione:
    ```
-   C:\Program Files\Java\jdk-17\bin
+   C:\WorkSpace\Java 17\bin
    ```
 4. Clique OK e reinicie o terminal
 
@@ -88,8 +88,7 @@ https://tomcat.apache.org/download-10.cgi
 
 ```batch
 @echo off
-set JAVA_HOME=C:\Program Files\Java\jdk-17
-set JRE_HOME=C:\Program Files\Java\jdk-17\jre
+set JAVA_HOME=C:\WorkSpace\Java 17
 set CATALINA_HOME=C:\apache-tomcat
 ```
 

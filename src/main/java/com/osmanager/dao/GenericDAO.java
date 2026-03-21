@@ -1,4 +1,4 @@
-package aron.bastos.osmanager.dao;
+package com.osmanager.dao;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -80,4 +80,3 @@ public abstract class GenericDAO<T, ID> {
         return findById(id) != null;
     }
 }
-

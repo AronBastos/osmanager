@@ -1,6 +1,6 @@
-package aron.bastos.osmanager.dao;
+package com.osmanager.dao;
 
-import aron.bastos.osmanager.model.Client;
+import com.osmanager.model.Client;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -69,4 +69,3 @@ public class ClientDAO extends GenericDAO<Client, Long> {
         }
     }
 }
-

@@ -7,22 +7,13 @@ Projeto: OSManager
 
 ---
 
-## ❌ **CRÍTICO: Java 8 (Necessário Java 17)**
+## ✅ **OK: Java 17**
 
-**Status Atual:**
 ```
-Java 1.8.0_202 (INCORRETO)
-```
-
-**Necessário:**
-```
-Java 17 (ou superior)
+Java 17.0.12 ✅
 ```
 
-**Ação:**
-1. Baixe Java 17: https://www.oracle.com/java/technologies/downloads/#java17
-2. Instale em: `C:\Program Files\Java\jdk-17`
-3. Verifique: `java -version`
+**Status:** Compatível com o projeto
 
 ---
 
@@ -121,4 +112,3 @@ Este documento contém instruções passo a passo para:
 
 **Gerado automaticamente pelo sistema**
 **Última validação: 20/03/2026**
-

@@ -10,10 +10,10 @@
         <provider>org.hibernate.jpa.HibernateJpaProvider</provider>
 
         <!-- Entidades JPA -->
-        <class>aron.bastos.osmanager.model.Client</class>
-        <class>aron.bastos.osmanager.model.Vehicle</class>
-        <class>aron.bastos.osmanager.model.ServiceOrder</class>
-        <class>aron.bastos.osmanager.model.Service</class>
+        <class>com.osmanager.model.Client</class>
+        <class>com.osmanager.model.Vehicle</class>
+        <class>com.osmanager.model.ServiceOrder</class>
+        <class>com.osmanager.model.Service</class>
 
         <properties>
             <!-- Configuração do banco de dados -->
@@ -43,10 +43,10 @@
     <persistence-unit name="osmanagerTestPU" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernateJpaProvider</provider>
 
-        <class>aron.bastos.osmanager.model.Client</class>
-        <class>aron.bastos.osmanager.model.Vehicle</class>
-        <class>aron.bastos.osmanager.model.ServiceOrder</class>
-        <class>aron.bastos.osmanager.model.Service</class>
+        <class>com.osmanager.model.Client</class>
+        <class>com.osmanager.model.Vehicle</class>
+        <class>com.osmanager.model.ServiceOrder</class>
+        <class>com.osmanager.model.Service</class>
 
         <properties>
             <!-- H2 em memória para testes -->

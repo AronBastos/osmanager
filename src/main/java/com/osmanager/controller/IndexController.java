@@ -1,4 +1,4 @@
-package aron.bastos.osmanager.controller;
+package com.osmanager.controller;
 
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.SessionScoped;
@@ -47,4 +47,3 @@ public class IndexController implements Serializable {
         this.welcomeMessage = welcomeMessage;
     }
 }
-

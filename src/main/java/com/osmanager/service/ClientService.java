@@ -1,7 +1,7 @@
-package aron.bastos.osmanager.service;
+package com.osmanager.service;
 
-import aron.bastos.osmanager.dao.ClientDAO;
-import aron.bastos.osmanager.model.Client;
+import com.osmanager.dao.ClientDAO;
+import com.osmanager.model.Client;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import java.util.List;
@@ -119,4 +119,3 @@ public class ClientService {
         return email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
     }
 }
-

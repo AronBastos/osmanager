@@ -1,7 +1,7 @@
-package aron.bastos.osmanager.service;
+package com.osmanager.service;
 
-import aron.bastos.osmanager.dao.ClientDAO;
-import aron.bastos.osmanager.model.Client;
+import com.osmanager.dao.ClientDAO;
+import com.osmanager.model.Client;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -164,5 +164,3 @@ class ClientServiceTest {
         });
     }
 }
-
-
