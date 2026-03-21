@@ -12,6 +12,14 @@
             </PendingDiffInfo>
           </value>
         </entry>
+        <entry key="$PROJECT_DIR$/docs/setup/CRIAR_SETENV_BAT.md">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/docs/setup/CRIAR_SETENV_BAT.md" />
+              <option name="updatedContent" value="#  Como Criar o setenv.bat para Tomcat 9&#10;&#10;## ⚠️ PROBLEMA IDENTIFICADO&#10;&#10;O arquivo `setenv.bat` foi criado automaticamente, mas não conseguimos copiar para a pasta do Tomcat devido a **permissões de acesso**.&#10;&#10;**Localização do arquivo:** `C:\Users\aronl\Documents\setenv.bat`&#10;&#10;---&#10;&#10;## ✅ CONTEÚDO DO ARQUIVO&#10;&#10;```batch&#10;@echo off&#10;set JAVA_HOME=C:\WorkSpace\Java 17&#10;set CATALINA_HOME=C:\WorkSpace\ApacheTomCat\apache-tomcat-9.0.115&#10;```&#10;&#10;---&#10;&#10;##  SOLUÇÃO RÁPIDA&#10;&#10;### Opção 1: Copiar Manualmente (Recomendado)&#10;&#10;1. **Abra o Windows Explorer**&#10;2. **Navegue até:** `C:\Users\aronl\Documents\`&#10;3. **Encontre o arquivo:** `setenv.bat`&#10;4. **Copie** (Ctrl+C)&#10;5. **Navegue até:** `C:\WorkSpace\ApacheTomCat\apache-tomcat-9.0.115\bin\`&#10;6. **Cole** (Ctrl+V)&#10;7. **Se pedir confirmação de sobrescrita:** Clique &quot;Sim&quot;&#10;&#10;---&#10;&#10;### Opção 2: Criar Manualmente&#10;&#10;1. **Abra o Bloco de Notas**&#10;2. **Cole o conteúdo abaixo:**&#10;&#10;```batch&#10;@echo off&#10;set JAVA_HOME=C:\WorkSpace\Java 17&#10;set CATALINA_HOME=C:\WorkSpace\ApacheTomCat\apache-tomcat-9.0.115&#10;```&#10;&#10;3. **Salve como:** `setenv.bat`&#10;4. **Localização:** `C:\WorkSpace\ApacheTomCat\apache-tomcat-9.0.115\bin\`&#10;5. **Tipo de arquivo:** Selecione &quot;Todos os arquivos (*.*)&quot; &#10;6. **Clique Salvar**&#10;&#10;---&#10;&#10;##  VERIFICAR SE FUNCIONOU&#10;&#10;Após copiar/criar o arquivo, execute:&#10;&#10;```powershell&#10;Test-Path &quot;C:\WorkSpace\ApacheTomCat\apache-tomcat-9.0.115\bin\setenv.bat&quot;&#10;```&#10;&#10;Deve aparecer: `True`&#10;&#10;---&#10;&#10;##  PRÓXIMO PASSO&#10;&#10;Após criar o arquivo, inicie o Tomcat:&#10;&#10;```powershell&#10;C:\WorkSpace\ApacheTomCat\apache-tomcat-9.0.115\bin\startup.bat&#10;```&#10;&#10;---&#10;&#10;## ⚠️ TROUBLESHOOTING&#10;&#10;### &quot;Arquivo não encontrado&quot;&#10;- Verifique o caminho exato do Tomcat&#10;- Use `Get-ChildItem C:\WorkSpace\ApacheTomCat` para confirmar o nome da pasta&#10;&#10;### &quot;Acesso negado&quot; ao salvar&#10;- Execute o Bloco de Notas como Administrador&#10;- Ou salve em `C:\Temp` e depois mova para o Tomcat&#10;&#10;---&#10;&#10;**Data:** 21 de Março de 2026&#10;**Status:** Aguardando ação do usuário&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
