@@ -1,0 +1,46 @@
+# ============================================
+# OSManager - Application Configuration
+# ============================================
+
+# Ambiente
+app.environment=development
+app.name=OSManager
+app.version=1.0.0
+
+# ============================================
+# Banco de Dados (MySQL Docker)
+# ============================================
+db.driver=com.mysql.cj.jdbc.Driver
+db.url=jdbc:mysql://localhost:3306/osmanager?serverTimezone=America/Sao_Paulo&useSSL=false&allowPublicKeyRetrieval=true
+db.username=root
+db.password=root_password
+db.pool.size=10
+db.pool.min=2
+
+# ============================================
+# JPA/Hibernate
+# ============================================
+jpa.dialect=org.hibernate.dialect.MySQL8Dialect
+jpa.show_sql=false
+jpa.format_sql=true
+jpa.ddl_auto=validate
+
+# ============================================
+# Logging
+# ============================================
+logging.level=INFO
+logging.file.path=./logs
+logging.file.name=osmanager.log
+
+# ============================================
+# JSF Configuration
+# ============================================
+jsf.project.stage=Development
+javax.faces.INTERPRET_EMPTY_STRING_SUBMITTED_VALUES_AS_NULL=true
+javax.faces.STATE_SAVING_METHOD=server
+
+# ============================================
+# PrimeFaces
+# ============================================
+primefaces.THEME=bootstrap
+primefaces.MOBILE=false
