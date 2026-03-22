@@ -27,7 +27,7 @@ Sistema completo para gestão de oficinas mecânicas desenvolvido em **Java 17**
 ## 📁 Estrutura do Projeto
 
 ```
-c:\projetos\osmanager/
+osmanager
 ├── docs/                    ← 📚 TODA DOCUMENTAÇÃO AQUI!
 │   ├── README.md           ← Índice central
 │   ├── MAPA.md             ← Guia visual
