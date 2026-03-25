@@ -22,8 +22,9 @@ public abstract class GenericDAO<T, ID> {
     /**
      * Persiste uma nova entidade
      */
-    public void create(T entity) {
+    public T create(T entity) {
         em.persist(entity);
+        return entity;
     }
 
     /**
