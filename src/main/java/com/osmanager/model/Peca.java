@@ -1,192 +1,135 @@
 package com.osmanager.model;
 
-import javax.persistence.*;
-import java.io.Serializable;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**
- * Entidade JPA: Peça
- * Representa uma peça utilizada na oficina
+ * Part (Peça) entity — a spare part stocked by the workshop.
+ * Demonstrates additional JPA annotations and business logic encapsulation.
  */
 @Entity
-@Table(name = "pecas", indexes = {
-    @Index(name = "idx_nome_peca", columnList = "nome"),
-    @Index(name = "idx_codigo", columnList = "codigo"),
-    @Index(name = "idx_categoria_peca", columnList = "categoria")
-})
-public class Peca implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+@Table(
+    name = "pecas",
+    indexes = {
+        @Index(name = "idx_peca_nome",     columnList = "nome"),
+        @Index(name = "idx_peca_codigo",   columnList = "codigo"),
+        @Index(name = "idx_peca_categoria",columnList = "categoria")
+    }
+)
+public class Peca {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // unique = true → DB-level uniqueness constraint (in addition to business validation)
     @Column(name = "codigo", length = 50, unique = true)
-    private String codigo;
+    private String code;
 
     @Column(name = "nome", length = 150, nullable = false)
-    private String nome;
+    private String name;
 
     @Column(name = "descricao", length = 500)
-    private String descricao;
+    private String description;
 
     @Column(name = "categoria", length = 100)
-    private String categoria;
+    private String category;
 
     @Column(name = "marca", length = 100)
-    private String marca;
+    private String brand;
 
-    @Column(name = "modelo", length = 100)
-    private String modelo;
-
+    // precision = total digits, scale = decimal digits
+    // BigDecimal is mandatory for money — NEVER use double/float for currency
     @Column(name = "preco_custo", precision = 10, scale = 2)
-    private BigDecimal precoCusto;
+    private BigDecimal costPrice;
 
     @Column(name = "preco_venda", precision = 10, scale = 2, nullable = false)
-    private BigDecimal precoVenda;
+    private BigDecimal salePrice;
 
     @Column(name = "quantidade_estoque", nullable = false)
-    private Integer quantidadeEstoque = 0;
+    private Integer stockQuantity = 0;
 
     @Column(name = "quantidade_minima")
-    private Integer quantidadeMinima = 0;
-
-    @Column(name = "localizacao", length = 100)
-    private String localizacao;
+    private Integer minimumQuantity = 0;
 
     @Column(name = "ativo")
-    private Boolean ativo = true;
+    private Boolean active = true;
 
-    // Construtores
-    public Peca() {
+    // ==============================================================
+    // ENCAPSULATION — business logic inside the entity (Topic 1)
+    // ==============================================================
+    // This is a DOMAIN METHOD: isLowStock() expresses business knowledge.
+    // Callers don't need to know the comparison logic — they just ask.
+    // This is the difference between an ANEMIC model (pure data bag)
+    // and a RICH model (data + behaviour together).
+    // ==============================================================
+
+    /** Returns true if current stock is at or below the minimum threshold. */
+    public boolean isLowStock() {
+        return stockQuantity != null && minimumQuantity != null
+                && stockQuantity <= minimumQuantity;
     }
 
-    public Peca(String codigo, String nome, BigDecimal precoVenda, Integer quantidadeEstoque) {
-        this.codigo = codigo;
-        this.nome = nome;
-        this.precoVenda = precoVenda;
-        this.quantidadeEstoque = quantidadeEstoque;
+    /** Deduct quantity when a part is used in a service order. */
+    public void deductStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity to deduct must be positive");
+        }
+        if (this.stockQuantity < quantity) {
+            throw new IllegalStateException("Insufficient stock for part: " + name);
+        }
+        this.stockQuantity -= quantity;
     }
 
-    // Getters e Setters
-    public Long getId() {
-        return id;
+    // ---- Constructors ----
+
+    public Peca() {}
+
+    public Peca(String code, String name, BigDecimal salePrice, Integer stockQuantity) {
+        this.code = code;
+        this.name = name;
+        this.salePrice = salePrice;
+        this.stockQuantity = stockQuantity;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    // ---- Getters and Setters ----
 
-    public String getCodigo() {
-        return codigo;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
 
-    public String getNome() {
-        return nome;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public String getDescricao() {
-        return descricao;
-    }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
 
-    public String getCategoria() {
-        return categoria;
-    }
+    public BigDecimal getCostPrice() { return costPrice; }
+    public void setCostPrice(BigDecimal costPrice) { this.costPrice = costPrice; }
 
-    public void setCategoria(String categoria) {
-        this.categoria = categoria;
-    }
+    public BigDecimal getSalePrice() { return salePrice; }
+    public void setSalePrice(BigDecimal salePrice) { this.salePrice = salePrice; }
 
-    public String getMarca() {
-        return marca;
-    }
+    public Integer getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
 
-    public void setMarca(String marca) {
-        this.marca = marca;
-    }
+    public Integer getMinimumQuantity() { return minimumQuantity; }
+    public void setMinimumQuantity(Integer minimumQuantity) { this.minimumQuantity = minimumQuantity; }
 
-    public String getModelo() {
-        return modelo;
-    }
-
-    public void setModelo(String modelo) {
-        this.modelo = modelo;
-    }
-
-    public BigDecimal getPrecoCusto() {
-        return precoCusto;
-    }
-
-    public void setPrecoCusto(BigDecimal precoCusto) {
-        this.precoCusto = precoCusto;
-    }
-
-    public BigDecimal getPrecoVenda() {
-        return precoVenda;
-    }
-
-    public void setPrecoVenda(BigDecimal precoVenda) {
-        this.precoVenda = precoVenda;
-    }
-
-    public Integer getQuantidadeEstoque() {
-        return quantidadeEstoque;
-    }
-
-    public void setQuantidadeEstoque(Integer quantidadeEstoque) {
-        this.quantidadeEstoque = quantidadeEstoque;
-    }
-
-    public Integer getQuantidadeMinima() {
-        return quantidadeMinima;
-    }
-
-    public void setQuantidadeMinima(Integer quantidadeMinima) {
-        this.quantidadeMinima = quantidadeMinima;
-    }
-
-    public String getLocalizacao() {
-        return localizacao;
-    }
-
-    public void setLocalizacao(String localizacao) {
-        this.localizacao = localizacao;
-    }
-
-    public Boolean getAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
-
-    // Métodos utilitários
-    public boolean isEstoqueBaixo() {
-        return quantidadeEstoque <= quantidadeMinima;
-    }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
 
     @Override
     public String toString() {
-        return "Peca{" +
-                "id=" + id +
-                ", codigo='" + codigo + '\'' +
-                ", nome='" + nome + '\'' +
-                ", precoVenda=" + precoVenda +
-                ", quantidadeEstoque=" + quantidadeEstoque +
-                '}';
+        return "Peca{id=" + id + ", code='" + code + "', name='" + name
+                + "', stock=" + stockQuantity + "}";
     }
 }

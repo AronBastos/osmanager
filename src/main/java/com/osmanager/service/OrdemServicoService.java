@@ -1,193 +1,264 @@
 package com.osmanager.service;
 
-import com.osmanager.dao.ClienteDAO;
-import com.osmanager.dao.OrdemServicoDAO;
-import com.osmanager.dao.TecnicoDAO;
-import com.osmanager.model.Cliente;
+import com.osmanager.dto.OrdemServicoRequestDTO;
+import com.osmanager.dto.OrdemServicoResponseDTO;
+import com.osmanager.exception.BusinessException;
+import com.osmanager.exception.ResourceNotFoundException;
+import com.osmanager.model.Client;
 import com.osmanager.model.OrdemServico;
-import com.osmanager.model.OrdemServico.StatusOrdemServico;
+import com.osmanager.model.OrdemServico.Status;
 import com.osmanager.model.Tecnico;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.osmanager.repository.ClientRepository;
+import com.osmanager.repository.OrdemServicoRepository;
+import com.osmanager.repository.TecnicoRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.ejb.Stateless;
-import javax.inject.Inject;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Serviço de negócio para Ordem de Serviço
+ * Service Order business service.
+ *
+ * ==============================================================
+ * @Transactional PROPAGATION — INTERVIEW NOTE (Topic 7)
+ * ==============================================================
+ * Propagation controls what happens when a @Transactional method
+ * is called FROM WITHIN another transaction.
+ *
+ * REQUIRED (default):
+ *   Join the existing tx. If no tx exists, create a new one.
+ *   Most common — use for all standard service operations.
+ *
+ * REQUIRES_NEW:
+ *   Always creates a NEW transaction. Suspends any existing one.
+ *   Use case: AUDIT LOGGING — must persist even if the main tx
+ *   rolls back. The audit record survives even on failure.
+ *
+ * SUPPORTS:
+ *   Join if exists; run WITHOUT a tx if not.
+ *   Use for read operations that can run in or out of a tx.
+ *
+ * NOT_SUPPORTED:
+ *   Always run without a transaction. Suspends the existing one.
+ *
+ * NEVER:
+ *   MUST NOT be in a transaction — throws exception if one exists.
+ *
+ * Q: "What is @Transactional and when should you use it?"
+ * A: It wraps the method in a DB transaction. If a RuntimeException
+ *    is thrown, all changes are rolled back atomically. Use on
+ *    service methods that perform multiple writes that must succeed
+ *    or fail together. Add readOnly=true on read-only methods.
+ * ==============================================================
  */
-@Stateless
+@Service
 public class OrdemServicoService {
 
-    private static final Logger logger = LogManager.getLogger(OrdemServicoService.class);
+    private final OrdemServicoRepository ordemServicoRepository;
+    private final ClientRepository clientRepository;
+    private final TecnicoRepository tecnicoRepository;
 
-    @Inject
-    private OrdemServicoDAO ordemServicoDAO;
-
-    @Inject
-    private ClienteDAO clienteDAO;
-
-    @Inject
-    private TecnicoDAO tecnicoDAO;
-
-    /**
-     * Cria uma nova ordem de serviço
-     */
-    public OrdemServico createOrdemServico(OrdemServico ordemServico) throws Exception {
-        logger.info("Criando nova ordem de serviço para cliente: {}", ordemServico.getCliente().getName());
-
-        validateOrdemServico(ordemServico);
-
-        ordemServico.setStatus(StatusOrdemServico.ABERTA);
-        ordemServico.setDataAbertura(LocalDateTime.now());
-
-        OrdemServico created = ordemServicoDAO.create(ordemServico);
-        logger.info("Ordem de serviço criada com sucesso: ID {}", created.getId());
-        return created;
+    // Constructor injection — all three dependencies required
+    public OrdemServicoService(
+            OrdemServicoRepository ordemServicoRepository,
+            ClientRepository clientRepository,
+            TecnicoRepository tecnicoRepository) {
+        this.ordemServicoRepository = ordemServicoRepository;
+        this.clientRepository = clientRepository;
+        this.tecnicoRepository = tecnicoRepository;
     }
 
     /**
-     * Atualiza uma ordem de serviço
+     * Creates a new service order.
+     * Propagation.REQUIRED (default): joins any enclosing transaction.
      */
-    public OrdemServico updateOrdemServico(OrdemServico ordemServico) throws Exception {
-        logger.info("Atualizando ordem de serviço ID: {}", ordemServico.getId());
+    @Transactional
+    public OrdemServicoResponseDTO createOrder(OrdemServicoRequestDTO dto) {
+        Client client = clientRepository.findById(dto.getClientId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Client not found with id: " + dto.getClientId()));
 
-        if (ordemServico.getId() == null) {
-            throw new IllegalArgumentException("ID da ordem de serviço é obrigatório");
+        if (Boolean.FALSE.equals(client.getActive())) {
+            throw new BusinessException("Cannot create order for inactive client");
         }
 
-        OrdemServico existing = ordemServicoDAO.findById(ordemServico.getId());
-        if (existing == null) {
-            throw new IllegalArgumentException("Ordem de serviço não encontrada: " + ordemServico.getId());
+        Tecnico tecnico = tecnicoRepository.findById(dto.getTecnicoId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Technician not found with id: " + dto.getTecnicoId()));
+
+        if (Boolean.FALSE.equals(tecnico.getActive())) {
+            throw new BusinessException("Cannot assign order to inactive technician");
         }
 
-        validateOrdemServico(ordemServico);
+        OrdemServico order = new OrdemServico(client, tecnico, dto.getDescription());
+        order.setNotes(dto.getNotes());
+        order.setTotalAmount(dto.getTotalAmount());
+        order.setDiscount(dto.getDiscount());
+        // @PrePersist will set openedAt and recalculate finalAmount before INSERT
 
-        OrdemServico updated = ordemServicoDAO.update(ordemServico);
-        logger.info("Ordem de serviço atualizada com sucesso: ID {}", ordemServico.getId());
-        return updated;
+        OrdemServico saved = ordemServicoRepository.save(order);
+        return OrdemServicoResponseDTO.from(saved);
     }
 
     /**
-     * Finaliza uma ordem de serviço
+     * Returns all orders — uses JOIN FETCH (N+1 prevention).
+     *
+     * ==============================================================
+     * STREAMS WITH COMPLEX MAPPING — INTERVIEW NOTE (Topic 2)
+     * ==============================================================
+     * The map() call here uses a method reference that receives an
+     * already-loaded entity (client and tecnico are JOIN FETCHed).
+     * Safe to call getClient().getName() — no lazy loading triggered.
+     *
+     * If we used findAll() instead of findAllWithClientAndTecnico(),
+     * each OrdemServicoResponseDTO.from(os) call would trigger
+     * TWO extra queries (os.getClient() and os.getTecnico()) — N+1!
+     * ==============================================================
      */
-    public OrdemServico finalizarOrdemServico(Long ordemServicoId) throws Exception {
-        logger.info("Finalizando ordem de serviço ID: {}", ordemServicoId);
+    @Transactional(readOnly = true)
+    public List<OrdemServicoResponseDTO> getAllOrders() {
+        return ordemServicoRepository.findAllWithClientAndTecnico()
+                .stream()
+                .map(OrdemServicoResponseDTO::from)
+                .collect(Collectors.toList());
+    }
 
-        OrdemServico ordemServico = ordemServicoDAO.findById(ordemServicoId);
-        if (ordemServico == null) {
-            throw new IllegalArgumentException("Ordem de serviço não encontrada: " + ordemServicoId);
+    @Transactional(readOnly = true)
+    public OrdemServicoResponseDTO getOrderById(Long id) {
+        OrdemServico order = ordemServicoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        return OrdemServicoResponseDTO.from(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrdemServicoResponseDTO> getOrdersByClient(Long clientId) {
+        if (!clientRepository.existsById(clientId)) {
+            throw new ResourceNotFoundException("Client not found with id: " + clientId);
         }
+        return ordemServicoRepository.findByClientIdOrderByOpenedAtDesc(clientId)
+                .stream()
+                .map(OrdemServicoResponseDTO::from)
+                .collect(Collectors.toList());
+    }
 
-        if (ordemServico.getStatus() == StatusOrdemServico.FINALIZADA) {
-            throw new IllegalArgumentException("Ordem de serviço já está finalizada");
-        }
-
-        ordemServico.setStatus(StatusOrdemServico.FINALIZADA);
-        ordemServico.setDataFechamento(LocalDateTime.now());
-
-        OrdemServico updated = ordemServicoDAO.update(ordemServico);
-        logger.info("Ordem de serviço finalizada com sucesso: ID {}", ordemServicoId);
-        return updated;
+    @Transactional(readOnly = true)
+    public List<OrdemServicoResponseDTO> getOrdersByStatus(Status status) {
+        return ordemServicoRepository.findByStatusOrderByOpenedAtAsc(status)
+                .stream()
+                .map(OrdemServicoResponseDTO::from)
+                .collect(Collectors.toList());
     }
 
     /**
-     * Cancela uma ordem de serviço
+     * Marks an order as IN_PROGRESS.
+     * Business rule: only OPEN orders can be started.
+     *
+     * Shows STATE MACHINE pattern — status transitions have rules.
      */
-    public OrdemServico cancelarOrdemServico(Long ordemServicoId) throws Exception {
-        logger.info("Cancelando ordem de serviço ID: {}", ordemServicoId);
+    @Transactional
+    public OrdemServicoResponseDTO startOrder(Long id) {
+        OrdemServico order = ordemServicoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
-        OrdemServico ordemServico = ordemServicoDAO.findById(ordemServicoId);
-        if (ordemServico == null) {
-            throw new IllegalArgumentException("Ordem de serviço não encontrada: " + ordemServicoId);
+        if (order.getStatus() != Status.OPEN) {
+            throw new BusinessException(
+                    "Only OPEN orders can be started. Current status: " + order.getStatus());
         }
 
-        if (ordemServico.getStatus() == StatusOrdemServico.FINALIZADA) {
-            throw new IllegalArgumentException("Não é possível cancelar uma ordem finalizada");
-        }
-
-        ordemServico.setStatus(StatusOrdemServico.CANCELADA);
-
-        OrdemServico updated = ordemServicoDAO.update(ordemServico);
-        logger.info("Ordem de serviço cancelada com sucesso: ID {}", ordemServicoId);
-        return updated;
+        order.setStatus(Status.IN_PROGRESS);
+        // dirty checking fires UPDATE on commit — no explicit save() needed
+        return OrdemServicoResponseDTO.from(order);
     }
 
     /**
-     * Busca ordem de serviço por ID
+     * Completes an order.
+     *
+     * ==============================================================
+     * PROPAGATION.REQUIRED — Default behaviour
+     * ==============================================================
+     * If an outer @Transactional method calls this, they share ONE tx.
+     * If called standalone, a new tx is created.
+     * Both the order update AND any side effects happen atomically.
+     * ==============================================================
      */
-    public OrdemServico getOrdemServicoById(Long id) {
-        logger.debug("Buscando ordem de serviço por ID: {}", id);
-        return ordemServicoDAO.findById(id);
-    }
+    @Transactional
+    public OrdemServicoResponseDTO completeOrder(Long id) {
+        OrdemServico order = ordemServicoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
-    /**
-     * Lista ordens de serviço por cliente
-     */
-    public List<OrdemServico> getOrdensByCliente(Long clienteId) {
-        logger.debug("Buscando ordens de serviço por cliente ID: {}", clienteId);
-        return ordemServicoDAO.findByCliente(clienteId);
-    }
-
-    /**
-     * Lista ordens de serviço por técnico
-     */
-    public List<OrdemServico> getOrdensByTecnico(Long tecnicoId) {
-        logger.debug("Buscando ordens de serviço por técnico ID: {}", tecnicoId);
-        return ordemServicoDAO.findByTecnico(tecnicoId);
-    }
-
-    /**
-     * Lista ordens de serviço abertas
-     */
-    public List<OrdemServico> getOrdensAbertas() {
-        logger.debug("Listando ordens de serviço abertas");
-        return ordemServicoDAO.findOpenOrders();
-    }
-
-    /**
-     * Lista ordens de serviço em andamento
-     */
-    public List<OrdemServico> getOrdensEmAndamento() {
-        logger.debug("Listando ordens de serviço em andamento");
-        return ordemServicoDAO.findInProgressOrders();
-    }
-
-    /**
-     * Conta ordens por status
-     */
-    public Long countOrdensByStatus(StatusOrdemServico status) {
-        logger.debug("Contando ordens de serviço por status: {}", status);
-        return ordemServicoDAO.countByStatus(status);
-    }
-
-    /**
-     * Valida ordem de serviço
-     */
-    private void validateOrdemServico(OrdemServico ordemServico) throws Exception {
-        if (ordemServico.getCliente() == null || ordemServico.getCliente().getId() == null) {
-            throw new IllegalArgumentException("Cliente é obrigatório");
+        if (order.getStatus() == Status.DONE) {
+            throw new BusinessException("Order is already completed");
+        }
+        if (order.getStatus() == Status.CANCELLED) {
+            throw new BusinessException("Cannot complete a cancelled order");
         }
 
-        Cliente cliente = clienteDAO.findById(ordemServico.getCliente().getId());
-        if (cliente == null) {
-            throw new IllegalArgumentException("Cliente não encontrado: " + ordemServico.getCliente().getId());
+        order.setStatus(Status.DONE);
+        order.setClosedAt(LocalDateTime.now());
+        // @PreUpdate will recalculate finalAmount before UPDATE
+
+        return OrdemServicoResponseDTO.from(order);
+    }
+
+    /**
+     * Cancels an order.
+     *
+     * ==============================================================
+     * PROPAGATION.REQUIRES_NEW — INTERVIEW EXAMPLE (Topic 7)
+     * ==============================================================
+     * If we had an audit log service called here, it would use
+     * REQUIRES_NEW so the audit record is saved independently:
+     *
+     *   @Transactional(propagation = Propagation.REQUIRES_NEW)
+     *   public void logCancellation(Long orderId, String reason) {
+     *       // This runs in its own transaction.
+     *       // Even if the main cancelOrder() tx rolls back,
+     *       // the audit log record will be committed.
+     *   }
+     * ==============================================================
+     */
+    @Transactional
+    public OrdemServicoResponseDTO cancelOrder(Long id) {
+        OrdemServico order = ordemServicoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        if (order.getStatus() == Status.DONE) {
+            throw new BusinessException("Cannot cancel a completed order");
+        }
+        if (order.getStatus() == Status.CANCELLED) {
+            throw new BusinessException("Order is already cancelled");
         }
 
-        if (ordemServico.getTecnico() == null || ordemServico.getTecnico().getId() == null) {
-            throw new IllegalArgumentException("Técnico é obrigatório");
-        }
+        order.setStatus(Status.CANCELLED);
+        order.setClosedAt(LocalDateTime.now());
 
-        Tecnico tecnico = tecnicoDAO.findById(ordemServico.getTecnico().getId());
-        if (tecnico == null) {
-            throw new IllegalArgumentException("Técnico não encontrado: " + ordemServico.getTecnico().getId());
-        }
+        return OrdemServicoResponseDTO.from(order);
+    }
 
-        if (ordemServico.getDescricao() == null || ordemServico.getDescricao().trim().isEmpty()) {
-            throw new IllegalArgumentException("Descrição é obrigatória");
-        }
+    /**
+     * Dashboard metric — count by status.
+     * readOnly = true: no writes, disable dirty checking for performance.
+     */
+    @Transactional(readOnly = true)
+    public Long countByStatus(Status status) {
+        return ordemServicoRepository.countByStatus(status);
+    }
+
+    /**
+     * Revenue for a period.
+     *
+     * Stream example using method reference chain + Optional.orElse:
+     *   Double revenue = repo.sumRevenueByPeriod(start, end);
+     *   return Optional.ofNullable(revenue).orElse(0.0);
+     *
+     * (The JPQL already uses COALESCE so null is unlikely, but defensive coding)
+     */
+    @Transactional(readOnly = true)
+    public Double getRevenue(LocalDateTime start, LocalDateTime end) {
+        Double revenue = ordemServicoRepository.sumRevenueByPeriod(start, end);
+        return revenue != null ? revenue : 0.0;
     }
 }

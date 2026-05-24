@@ -1,140 +1,78 @@
 package com.osmanager.model;
 
-import javax.persistence.*;
-import java.io.Serializable;
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
 
 /**
- * Entidade JPA: Técnico
- * Representa um técnico da oficina
+ * Technician entity — extends Person (Inheritance pillar).
+ *
+ * A Tecnico IS-A Person — shares id, name, email, phone, cpf,
+ * active, and createdAt from the Person @MappedSuperclass.
+ *
+ * Table: "tecnicos" (separate from "clients" — @MappedSuperclass means
+ * each subclass has its own independent table with all fields flattened in.)
+ *
+ * INTERVIEW NOTE (Topic 6 — JPA Entity):
+ * Both Client and Tecnico extend Person, but in the database they are
+ * completely separate tables with no shared rows or foreign keys between them.
+ * This is the simplest JPA inheritance strategy — @MappedSuperclass.
  */
 @Entity
-@Table(name = "tecnicos", indexes = {
-    @Index(name = "idx_nome_tecnico", columnList = "nome"),
-    @Index(name = "idx_email_tecnico", columnList = "email"),
-    @Index(name = "idx_cpf_tecnico", columnList = "cpf")
-})
-public class Tecnico implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "nome", length = 150, nullable = false)
-    private String name;
-
-    @Column(name = "email", length = 100)
-    private String email;
-
-    @Column(name = "telefone", length = 20)
-    private String phone;
-
-    @Column(name = "cpf", length = 14, unique = true)
-    private String cpf;
+@Table(
+    name = "tecnicos",
+    indexes = {
+        @Index(name = "idx_tecnico_name", columnList = "nome"),
+        @Index(name = "idx_tecnico_cpf", columnList = "cpf")
+    }
+)
+public class Tecnico extends Person {
 
     @Column(name = "especialidade", length = 100)
     private String specialty;
 
-    @Column(name = "ativo")
-    private Boolean active = true;
-
-    @Column(name = "data_cadastro", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    // CREA or equivalent professional license number
+    @Column(name = "registro_profissional", length = 50)
+    private String professionalLicense;
 
     @PrePersist
     protected void prePersist() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+        if (getCreatedAt() == null) {
+            setCreatedAt(java.time.LocalDateTime.now());
         }
     }
 
-    // Construtores
-    public Tecnico() {
+    /**
+     * Polymorphism — Tecnico's own implementation of getRole().
+     * Person p = new Tecnico(); p.getRole() → "TECHNICIAN"
+     */
+    @Override
+    public String getRole() {
+        return "TECHNICIAN";
     }
+
+    // ---- Constructors ----
+
+    public Tecnico() {}
 
     public Tecnico(String name, String email, String phone, String cpf, String specialty) {
-        this.name = name;
-        this.email = email;
-        this.phone = phone;
-        this.cpf = cpf;
+        setName(name);
+        setEmail(email);
+        setPhone(phone);
+        setCpf(cpf);
         this.specialty = specialty;
     }
 
-    // Getters e Setters
-    public Long getId() {
-        return id;
-    }
+    // ---- Getters and Setters ----
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getSpecialty() { return specialty; }
+    public void setSpecialty(String specialty) { this.specialty = specialty; }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getCpf() {
-        return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
-
-    public String getSpecialty() {
-        return specialty;
-    }
-
-    public void setSpecialty(String specialty) {
-        this.specialty = specialty;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public String getProfessionalLicense() { return professionalLicense; }
+    public void setProfessionalLicense(String professionalLicense) {
+        this.professionalLicense = professionalLicense;
     }
 
     @Override
     public String toString() {
-        return "Tecnico{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", cpf='" + cpf + '\'' +
-                ", specialty='" + specialty + '\'' +
-                '}';
+        return "Tecnico{id=" + getId() + ", name='" + getName() + "', specialty='" + specialty + "'}";
     }
 }

@@ -1,117 +1,81 @@
 package com.osmanager.model;
 
-import javax.persistence.*;
-import java.io.Serializable;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**
- * Entidade JPA: Serviço
- * Representa um serviço oferecido pela oficina
+ * Service (Serviço) entity — a type of labour service offered by the workshop.
+ * Examples: "Oil change", "Brake inspection", "Engine tune-up".
  */
 @Entity
-@Table(name = "servicos", indexes = {
-    @Index(name = "idx_nome_servico", columnList = "nome"),
-    @Index(name = "idx_categoria", columnList = "categoria")
-})
-public class Servico implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+@Table(
+    name = "servicos",
+    indexes = {
+        @Index(name = "idx_servico_nome",     columnList = "nome"),
+        @Index(name = "idx_servico_categoria",columnList = "categoria")
+    }
+)
+public class Servico {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "nome", length = 150, nullable = false)
-    private String nome;
+    private String name;
 
     @Column(name = "descricao", length = 500)
-    private String descricao;
+    private String description;
 
     @Column(name = "categoria", length = 100)
-    private String categoria;
+    private String category;
 
+    // Standard price for this service — actual price may vary per order
     @Column(name = "preco", precision = 10, scale = 2, nullable = false)
-    private BigDecimal preco;
+    private BigDecimal basePrice;
 
+    // Estimated hours to complete — used for scheduling
     @Column(name = "tempo_estimado_horas")
-    private Integer tempoEstimadoHoras;
+    private Integer estimatedHours;
 
     @Column(name = "ativo")
-    private Boolean ativo = true;
+    private Boolean active = true;
 
-    // Construtores
-    public Servico() {
+    // ---- Constructors ----
+
+    public Servico() {}
+
+    public Servico(String name, String description, BigDecimal basePrice) {
+        this.name = name;
+        this.description = description;
+        this.basePrice = basePrice;
     }
 
-    public Servico(String nome, String descricao, BigDecimal preco) {
-        this.nome = nome;
-        this.descricao = descricao;
-        this.preco = preco;
-    }
+    // ---- Getters and Setters ----
 
-    // Getters e Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getNome() {
-        return nome;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
-    public String getDescricao() {
-        return descricao;
-    }
+    public BigDecimal getBasePrice() { return basePrice; }
+    public void setBasePrice(BigDecimal basePrice) { this.basePrice = basePrice; }
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
+    public Integer getEstimatedHours() { return estimatedHours; }
+    public void setEstimatedHours(Integer estimatedHours) { this.estimatedHours = estimatedHours; }
 
-    public String getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(String categoria) {
-        this.categoria = categoria;
-    }
-
-    public BigDecimal getPreco() {
-        return preco;
-    }
-
-    public void setPreco(BigDecimal preco) {
-        this.preco = preco;
-    }
-
-    public Integer getTempoEstimadoHoras() {
-        return tempoEstimadoHoras;
-    }
-
-    public void setTempoEstimadoHoras(Integer tempoEstimadoHoras) {
-        this.tempoEstimadoHoras = tempoEstimadoHoras;
-    }
-
-    public Boolean getAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
 
     @Override
     public String toString() {
-        return "Servico{" +
-                "id=" + id +
-                ", nome='" + nome + '\'' +
-                ", preco=" + preco +
-                '}';
+        return "Servico{id=" + id + ", name='" + name + "', basePrice=" + basePrice + "}";
     }
 }
