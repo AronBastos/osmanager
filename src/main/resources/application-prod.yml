@@ -1,0 +1,53 @@
+# ==============================================================
+# PROD Profile — application-prod.yml
+# ==============================================================
+# Activated with: SPRING_PROFILES_ACTIVE=prod
+# ALL sensitive values come from environment variables — NEVER
+# hardcode passwords or secrets in source code / committed files.
+#
+# INTERVIEW NOTE: ${VAR:default} syntax
+#   ${DB_URL:jdbc:mysql://localhost:3306/osmanager} means:
+#   "Read from env var DB_URL; if missing, use the default value."
+#   In production, always set the env vars and never rely on defaults.
+# ==============================================================
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/osmanager?serverTimezone=UTC&useSSL=true}
+    username: ${DB_USERNAME:osmanager_user}
+    password: ${DB_PASSWORD:change_me_in_prod}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # HikariCP Connection Pool — Spring Boot auto-configures this
+    # INTERVIEW NOTE: HikariCP is the default and fastest connection pool.
+    # Tune pool-size based on: (core_count * 2) + effective_spindle_count
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      # validate: checks schema matches entities but does NOT modify DB
+      # NEVER use create-drop or update in production
+      ddl-auto: validate
+    show-sql: false  # Never log SQL in prod — performance + security
+
+logging:
+  level:
+    com.osmanager: INFO
+    org.hibernate: WARN
+  file:
+    name: /var/log/osmanager/app.log
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# Disable Swagger UI in production (security)
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false

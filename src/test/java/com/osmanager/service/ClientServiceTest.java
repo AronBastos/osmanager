@@ -1,166 +1,241 @@
 package com.osmanager.service;
 
-import com.osmanager.dao.ClientDAO;
+import com.osmanager.dto.ClientRequestDTO;
+import com.osmanager.dto.ClientResponseDTO;
+import com.osmanager.exception.BusinessException;
+import com.osmanager.exception.ResourceNotFoundException;
 import com.osmanager.model.Client;
+import com.osmanager.repository.ClientRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Testes unitários para ClientService
+ * ==============================================================
+ * UNIT TEST WITH MOCKITO — INTERVIEW NOTE (Topic 9)
+ * ==============================================================
+ * WHAT is a unit test?
+ *   Tests a SINGLE class in complete ISOLATION from its dependencies.
+ *   Dependencies are replaced by MOCKS — objects that simulate real
+ *   behaviour without hitting DB, network, or filesystem.
+ *
+ * WHY unit tests?
+ *   Fast (milliseconds), deterministic, run without any infrastructure.
+ *   Provide a safety net for refactoring — they fail immediately if
+ *   behaviour changes.
+ *
+ * ANNOTATION BREAKDOWN:
+ *
+ * @ExtendWith(MockitoExtension.class)
+ *   → Activates Mockito in JUnit 5 — processes @Mock and @InjectMocks.
+ *   → Alternative to calling MockitoAnnotations.openMocks(this) manually.
+ *   → NO Spring context is loaded — this is a pure unit test.
+ *
+ * @Mock
+ *   → Creates a mock object for ClientRepository.
+ *   → All methods return default values (null for objects, 0 for numbers)
+ *     UNLESS stubbed with when(...).thenReturn(...).
+ *   → The real ClientRepository never runs — no DB calls.
+ *
+ * @InjectMocks
+ *   → Creates a REAL instance of ClientService.
+ *   → Injects the @Mock ClientRepository into it (via constructor injection).
+ *   → This is why CONSTRUCTOR injection is easier to test: Mockito just
+ *     calls new ClientService(mockedRepository) under the hood.
+ *
+ * Q: "What is the difference between @Mock and @Spy?"
+ * A: @Mock creates a completely fake object — all methods are stubbed.
+ *    @Spy wraps a REAL object — only the methods you stub are intercepted;
+ *    the rest delegate to the real implementation.
+ * ==============================================================
  */
+@ExtendWith(MockitoExtension.class)
+@DisplayName("ClientService Unit Tests")
 class ClientServiceTest {
 
     @Mock
-    private ClientDAO clientDAO;
+    private ClientRepository clientRepository;
 
     @InjectMocks
     private ClientService clientService;
 
+    // Test fixtures — set up once per test method
     private Client testClient;
+    private ClientRequestDTO testDTO;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        testClient = new Client();
+        // @BeforeEach: runs before EACH @Test method — isolates test state
+        testClient = new Client("João Silva", "joao@email.com", "(11) 99999-0000", "123.456.789-00");
         testClient.setId(1L);
-        testClient.setName("João Silva");
-        testClient.setEmail("joao@email.com");
-        testClient.setPhone("(11) 98765-4321");
-        testClient.setCpf("12345678901");
+        testClient.setActive(true);
+
+        testDTO = new ClientRequestDTO("João Silva", "joao@email.com", "(11) 99999-0000", "123.456.789-00");
+    }
+
+    // ==============================================================
+    // TEST NAMING CONVENTION — should_ExpectedBehaviour_When_Condition
+    // or given_When_Then (BDD style)
+    // ==============================================================
+
+    @Test
+    @DisplayName("Should create client successfully when CPF is unique")
+    void shouldCreateClient_WhenCpfIsUnique() {
+        // ==============================================================
+        // ARRANGE — INTERVIEW NOTE: AAA Pattern (Arrange, Act, Assert)
+        // ==============================================================
+        // Stub: when existsByCpf is called with any String → return false
+        // This simulates "CPF not yet registered" — no DB lookup needed.
+        when(clientRepository.existsByCpf(anyString())).thenReturn(false);
+        // Stub: when save() is called with any Client → return testClient
+        when(clientRepository.save(any(Client.class))).thenReturn(testClient);
+
+        // ACT — call the method under test
+        ClientResponseDTO result = clientService.createClient(testDTO);
+
+        // ASSERT — verify the result
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo("João Silva");
+        assertThat(result.getEmail()).isEqualTo("joao@email.com");
+
+        // VERIFY — ensure the collaboration happened as expected
+        // times(1): save() was called exactly once
+        verify(clientRepository, times(1)).save(any(Client.class));
+        verify(clientRepository, times(1)).existsByCpf("123.456.789-00");
     }
 
     @Test
-    void testCreateClientSuccess() throws Exception {
-        // Arrange
-        when(clientDAO.findByCpf(testClient.getCpf())).thenReturn(null);
+    @DisplayName("Should throw BusinessException when CPF is already registered")
+    void shouldThrowBusinessException_WhenCpfIsDuplicate() {
+        // Stub: CPF already exists in DB
+        when(clientRepository.existsByCpf(anyString())).thenReturn(true);
 
-        // Act
-        clientService.createClient(testClient);
+        // ==============================================================
+        // ASSERTJ EXCEPTION ASSERTION — INTERVIEW NOTE (Topic 9)
+        // ==============================================================
+        // assertThatThrownBy: executes a lambda and asserts an exception is thrown.
+        // Preferred over @Test(expected = ...) — can also assert the message.
+        //
+        // Alternative syntax:
+        //   assertThrows(BusinessException.class, () -> clientService.createClient(dto));
+        // (from JUnit 5 — also valid, but AssertJ's version checks the message too)
+        // ==============================================================
+        assertThatThrownBy(() -> clientService.createClient(testDTO))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("CPF already registered");
 
-        // Assert
-        verify(clientDAO, times(1)).create(testClient);
-        assertTrue(testClient.getActive());
+        // Verify save() was NEVER called — if CPF is dup, we abort early
+        verify(clientRepository, never()).save(any(Client.class));
     }
 
     @Test
-    void testCreateClientWithNullName() {
-        // Arrange
-        testClient.setName(null);
+    @DisplayName("Should return client by id")
+    void shouldReturnClient_WhenIdExists() {
+        // ==============================================================
+        // MOCKING Optional — INTERVIEW NOTE
+        // ==============================================================
+        // findById() returns Optional<Client>. Mock it with Optional.of(entity).
+        // Optional.empty() simulates the not-found case.
+        // ==============================================================
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(testClient));
 
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            clientService.createClient(testClient);
-        });
+        ClientResponseDTO result = clientService.getClientById(1L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getName()).isEqualTo("João Silva");
+        verify(clientRepository).findById(1L);  // times(1) is the default
     }
 
     @Test
-    void testCreateClientWithDuplicateCpf() {
-        // Arrange
-        Client existingClient = new Client();
-        existingClient.setId(2L);
-        when(clientDAO.findByCpf(testClient.getCpf())).thenReturn(existingClient);
+    @DisplayName("Should throw ResourceNotFoundException when client id does not exist")
+    void shouldThrowResourceNotFoundException_WhenIdNotFound() {
+        when(clientRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            clientService.createClient(testClient);
-        });
+        assertThatThrownBy(() -> clientService.getClientById(999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("999");
     }
 
     @Test
-    void testGetClientById() {
-        // Arrange
-        when(clientDAO.findById(1L)).thenReturn(testClient);
+    @DisplayName("Should return all active clients as DTOs")
+    void shouldReturnAllActiveClients() {
+        // Stub: repository returns a list with one client
+        Client client2 = new Client("Maria Santos", "maria@email.com", null, null);
+        client2.setId(2L);
+        client2.setActive(true);
 
-        // Act
-        Client result = clientService.getClientById(1L);
+        when(clientRepository.findByActiveOrderByNameAsc(true))
+                .thenReturn(List.of(testClient, client2));
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(testClient.getId(), result.getId());
-        assertEquals(testClient.getName(), result.getName());
-        verify(clientDAO, times(1)).findById(1L);
+        List<ClientResponseDTO> result = clientService.getAllActiveClients();
+
+        // AssertJ fluent assertions on collections
+        assertThat(result)
+                .hasSize(2)
+                .extracting(ClientResponseDTO::getName)   // extract names from DTOs
+                .containsExactly("João Silva", "Maria Santos");
     }
 
     @Test
-    void testUpdateClient() throws Exception {
-        // Arrange
-        Client existingClient = new Client();
-        existingClient.setId(1L);
-        existingClient.setName("Nome Antigo");
+    @DisplayName("Should deactivate client successfully")
+    void shouldDeactivateClient_WhenActive() {
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(testClient));
 
-        when(clientDAO.findById(1L)).thenReturn(existingClient);
-        when(clientDAO.update(testClient)).thenReturn(testClient);
+        clientService.deactivateClient(1L);
 
-        // Act
-        Client result = clientService.updateClient(testClient);
-
-        // Assert
-        assertNotNull(result);
-        verify(clientDAO, times(1)).update(testClient);
+        // Verify the client's active flag was changed
+        // Mockito captures the actual object — we can assert its state
+        assertThat(testClient.getActive()).isFalse();
+        // No explicit save() is called — dirty checking handles the UPDATE
+        // But we can verify it was NOT explicitly saved (asserting the pattern)
+        verify(clientRepository, never()).save(any(Client.class));
     }
 
     @Test
-    void testUpdateClientWithNullId() {
-        // Arrange
-        testClient.setId(null);
+    @DisplayName("Should throw BusinessException when deactivating already inactive client")
+    void shouldThrowBusinessException_WhenClientAlreadyInactive() {
+        testClient.setActive(false);
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(testClient));
 
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            clientService.updateClient(testClient);
-        });
+        assertThatThrownBy(() -> clientService.deactivateClient(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("already inactive");
     }
 
     @Test
-    void testDeleteClient() throws Exception {
-        // Arrange
-        when(clientDAO.findById(1L)).thenReturn(testClient);
+    @DisplayName("Should delete client when exists")
+    void shouldDeleteClient_WhenExists() {
+        when(clientRepository.existsById(1L)).thenReturn(true);
+        doNothing().when(clientRepository).deleteById(1L);
 
-        // Act
-        clientService.deleteClient(1L);
+        // Should not throw
+        assertThatCode(() -> clientService.deleteClient(1L))
+                .doesNotThrowAnyException();
 
-        // Assert
-        verify(clientDAO, times(1)).deleteById(1L);
+        verify(clientRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void testDeleteClientNotFound() {
-        // Arrange
-        when(clientDAO.findById(999L)).thenReturn(null);
+    @DisplayName("Should return empty list when no active clients")
+    void shouldReturnEmptyList_WhenNoActiveClients() {
+        when(clientRepository.findByActiveOrderByNameAsc(true))
+                .thenReturn(List.of());
 
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            clientService.deleteClient(999L);
-        });
-    }
+        List<ClientResponseDTO> result = clientService.getAllActiveClients();
 
-    @Test
-    void testValidateEmail() throws Exception {
-        // Arrange
-        Client validEmailClient = new Client();
-        validEmailClient.setName("Test");
-        validEmailClient.setEmail("test@example.com");
-
-        when(clientDAO.findByCpf(null)).thenReturn(null);
-
-        // Act & Assert
-        assertDoesNotThrow(() -> clientService.createClient(validEmailClient));
-    }
-
-    @Test
-    void testInvalidEmail() {
-        // Arrange
-        testClient.setEmail("invalid-email");
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            clientService.createClient(testClient);
-        });
+        assertThat(result).isEmpty();
+        // Convention: never return null for list endpoints — always empty list
     }
 }

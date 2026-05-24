@@ -1,0 +1,52 @@
+# ==============================================================
+# OSManager — Main Application Configuration
+# ==============================================================
+# INTERVIEW NOTE (Topic 4): application.yml vs application.properties
+# YAML is preferred for readability and nested structure.
+# Use ${VAR:default} syntax to inject environment variables —
+# the same image/JAR works in dev and prod just by setting env vars.
+#
+# Profile activation:
+#   java -jar osmanager.jar --spring.profiles.active=prod
+#   Or set env var: SPRING_PROFILES_ACTIVE=prod
+# ==============================================================
+
+spring:
+  application:
+    name: osmanager
+
+  # ==============================================================
+  # JPA / Hibernate Configuration
+  # ==============================================================
+  jpa:
+    # show-sql: true logs every SQL — useful for debugging N+1 problems
+    show-sql: false
+    properties:
+      hibernate:
+        # format_sql: true makes logged SQL readable (indented)
+        format_sql: true
+        # dialect is usually auto-detected — set explicitly only if needed
+        # dialect: org.hibernate.dialect.MySQL8Dialect
+    open-in-view: false
+    # INTERVIEW NOTE: open-in-view=false is BEST PRACTICE.
+    # When true (default!), the EntityManager stays open across the HTTP
+    # request/response cycle — lazy loading works but can cause N+1 silently.
+    # Setting to false forces you to load everything you need in the service layer.
+
+  # Jackson: how Java objects are serialised to JSON
+  jackson:
+    # Write dates as "2025-01-15T10:30:00" strings, not Unix timestamps
+    serialization:
+      write-dates-as-timestamps: false
+
+# ==============================================================
+# Active profile: override per environment
+# ==============================================================
+# Default: dev profile. Override with --spring.profiles.active=prod
+---
+spring:
+  config:
+    activate:
+      on-profile: default
+  profiles:
+    active: dev
