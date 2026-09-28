@@ -1,7 +1,6 @@
 # Dockerfile de Desenvolvimento com Hot Reload
 # Use com: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-version: '3.9'
 
 services:
   app:
