@@ -15,6 +15,13 @@ spring:
   application:
     name: osmanager
 
+  # Default: dev profile. Override with --spring.profiles.active=prod
+  # (must live in this base document, not a profile-specific one below —
+  # Spring Boot rejects spring.profiles.active inside a document that also
+  # sets spring.config.activate.on-profile)
+  profiles:
+    active: dev
+
   # ==============================================================
   # JPA / Hibernate Configuration
   # ==============================================================
@@ -38,15 +45,3 @@ spring:
     # Write dates as "2025-01-15T10:30:00" strings, not Unix timestamps
     serialization:
       write-dates-as-timestamps: false
-
-# ==============================================================
-# Active profile: override per environment
-# ==============================================================
-# Default: dev profile. Override with --spring.profiles.active=prod
----
-spring:
-  config:
-    activate:
-      on-profile: default
-  profiles:
-    active: dev
