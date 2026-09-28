@@ -37,3 +37,11 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Logs ###
+*.log
+logs/
+
+### IDE assistant state (noisy, machine-specific) ###
+.idea/copilotDiffState.xml
+.idea/copilot.data.migration.ask2agent.xml
