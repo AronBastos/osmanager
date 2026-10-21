@@ -101,11 +101,61 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 in-memory database — test scope only, used by @DataJpaTest -->
+        <!--
+        H2 in-memory database.
+        INTERVIEW NOTE: this must be "runtime", not "test", scope.
+        The "dev" profile (application-dev.yml) points spring.datasource.url
+        at H2 so you can run the whole app locally with no MySQL — but that
+        profile is active on `mvn spring-boot:run` / the packaged jar too,
+        not just inside `mvn test`. "test" scope puts the H2 driver on the
+        test classpath only; the running application's classpath wouldn't
+        have it, and HikariCP would fail with
+        "Cannot load driver class: org.h2.Driver" the moment you tried to
+        start the app outside of a test. "runtime" scope keeps it out of
+        compilation (nothing in main code references org.h2.* directly)
+        while still shipping it in the runnable jar.
+        -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+        ============================================================
+        REACTIVE STACK — INTERVIEW NOTE (Topic: Programação Reativa)
+        ============================================================
+        spring-boot-starter-webflux brings Project Reactor (Mono/Flux)
+        onto the classpath. It does NOT switch the server to Netty here:
+        this app still has spring-boot-starter-web, so Spring Boot keeps
+        WebApplicationType.SERVLET (Tomcat) and WebMvcAutoConfiguration
+        wins over WebFluxAutoConfiguration.
+
+        Q: "What happens if both starter-web and starter-webflux are on
+            the classpath?"
+        A: Spring Boot picks SERVLET (Tomcat/MVC) by default — MVC takes
+           precedence. You'd have to set
+           spring.main.web-application-type=reactive to force Netty/WebFlux.
+           Spring MVC's @RestController methods can still return Mono/Flux
+           directly (Spring adapts them via DeferredResult/ResponseBodyEmitter
+           under the hood) — see NotificacaoController. This lets a classic
+           MVC app expose a few genuinely reactive, non-blocking endpoints
+           (backed by a reactive datastore) without a full WebFlux migration.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!--
+        Reactive MongoDB: Spring Data repositories returning Mono/Flux,
+        backed by the non-blocking Mongo driver. Used for the Notificacao
+        feature — a genuinely non-relational, reactive-end-to-end slice
+        living next to the blocking JPA/MySQL side of the app.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb-reactive</artifactId>
         </dependency>
 
         <!--
@@ -119,6 +169,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- reactor-test: StepVerifier for asserting Mono/Flux emissions in tests -->
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -2,15 +2,18 @@ package com.osmanager.service;
 
 import com.osmanager.dto.OrdemServicoRequestDTO;
 import com.osmanager.dto.OrdemServicoResponseDTO;
+import com.osmanager.event.OrdemServicoStatusChangedEvent;
 import com.osmanager.exception.BusinessException;
 import com.osmanager.exception.ResourceNotFoundException;
 import com.osmanager.model.Client;
+import com.osmanager.model.Notificacao;
 import com.osmanager.model.OrdemServico;
 import com.osmanager.model.OrdemServico.Status;
 import com.osmanager.model.Tecnico;
 import com.osmanager.repository.ClientRepository;
 import com.osmanager.repository.OrdemServicoRepository;
 import com.osmanager.repository.TecnicoRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,15 +63,27 @@ public class OrdemServicoService {
     private final OrdemServicoRepository ordemServicoRepository;
     private final ClientRepository clientRepository;
     private final TecnicoRepository tecnicoRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    // Constructor injection — all three dependencies required
+    // Constructor injection — all four dependencies required
     public OrdemServicoService(
             OrdemServicoRepository ordemServicoRepository,
             ClientRepository clientRepository,
-            TecnicoRepository tecnicoRepository) {
+            TecnicoRepository tecnicoRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.ordemServicoRepository = ordemServicoRepository;
         this.clientRepository = clientRepository;
         this.tecnicoRepository = tecnicoRepository;
+        this.eventPublisher = eventPublisher;
+    }
+
+    /**
+     * Publishes a status-change event — picked up by NotificacaoEventListener
+     * AFTER this method's transaction commits (see that class for why).
+     * OrdemServicoService itself stays unaware of Mongo/Reactor/notifications.
+     */
+    private void publishStatusChanged(Long ordemServicoId, Notificacao.Tipo tipo, String mensagem) {
+        eventPublisher.publishEvent(new OrdemServicoStatusChangedEvent(ordemServicoId, tipo, mensagem));
     }
 
     /**
@@ -100,6 +115,8 @@ public class OrdemServicoService {
         // @PrePersist will set openedAt and recalculate finalAmount before INSERT
 
         OrdemServico saved = ordemServicoRepository.save(order);
+        publishStatusChanged(saved.getId(), Notificacao.Tipo.ABERTURA,
+                "Ordem de serviço aberta para " + client.getName());
         return OrdemServicoResponseDTO.from(saved);
     }
 
@@ -170,6 +187,8 @@ public class OrdemServicoService {
 
         order.setStatus(Status.IN_PROGRESS);
         // dirty checking fires UPDATE on commit — no explicit save() needed
+        publishStatusChanged(order.getId(), Notificacao.Tipo.INICIO,
+                "Técnico iniciou o atendimento da ordem #" + order.getId());
         return OrdemServicoResponseDTO.from(order);
     }
 
@@ -200,6 +219,8 @@ public class OrdemServicoService {
         order.setClosedAt(LocalDateTime.now());
         // @PreUpdate will recalculate finalAmount before UPDATE
 
+        publishStatusChanged(order.getId(), Notificacao.Tipo.CONCLUSAO,
+                "Ordem de serviço #" + order.getId() + " concluída");
         return OrdemServicoResponseDTO.from(order);
     }
 
@@ -235,6 +256,8 @@ public class OrdemServicoService {
         order.setStatus(Status.CANCELLED);
         order.setClosedAt(LocalDateTime.now());
 
+        publishStatusChanged(order.getId(), Notificacao.Tipo.CANCELAMENTO,
+                "Ordem de serviço #" + order.getId() + " cancelada");
         return OrdemServicoResponseDTO.from(order);
     }
 

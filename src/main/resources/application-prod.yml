@@ -35,6 +35,10 @@ spring:
       ddl-auto: validate
     show-sql: false  # Never log SQL in prod — performance + security
 
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/osmanager}
+
 logging:
   level:
     com.osmanager: INFO

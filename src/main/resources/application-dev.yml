@@ -35,6 +35,13 @@ spring:
       ddl-auto: create-drop
     show-sql: true
 
+  # Separate database name from prod, same pattern as the H2 "osmanager_dev" above.
+  # Still needs a real Mongo instance reachable (docker compose up -d mongo) —
+  # unlike H2, there's no in-memory embedded Mongo wired into this project.
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/osmanager_dev}
+
 # Verbose logging in dev
 logging:
   level:

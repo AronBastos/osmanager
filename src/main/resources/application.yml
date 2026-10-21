@@ -40,6 +40,17 @@ spring:
     # request/response cycle — lazy loading works but can cause N+1 silently.
     # Setting to false forces you to load everything you need in the service layer.
 
+  # ==============================================================
+  # Reactive MongoDB — used only by the Notificacao feature
+  # ==============================================================
+  # No schema/migration step: the "notificacoes" collection and its
+  # database are created on first write if they don't exist yet.
+  # Run `docker compose up -d mongo` (see docker-compose.yml) before
+  # starting the app if you want /api/orders/{id}/notifications to work.
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/osmanager}
+
   # Jackson: how Java objects are serialised to JSON
   jackson:
     # Write dates as "2025-01-15T10:30:00" strings, not Unix timestamps
