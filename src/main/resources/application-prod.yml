@@ -39,8 +39,6 @@ logging:
   level:
     com.osmanager: INFO
     org.hibernate: WARN
-  file:
-    name: /var/log/osmanager/app.log
 
 server:
   port: ${SERVER_PORT:8080}

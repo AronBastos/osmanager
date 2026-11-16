@@ -101,11 +101,11 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 in-memory database — test scope only, used by @DataJpaTest -->
+        <!-- H2 em memória: banco do perfil "dev" (padrão) e dos testes. Em produção usa-se MySQL (perfil "prod"). -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
 
         <!--
