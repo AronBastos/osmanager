@@ -15,6 +15,10 @@ spring:
   application:
     name: osmanager
 
+  profiles:
+    # Perfil padrão: dev (H2 em memória). Em produção: SPRING_PROFILES_ACTIVE=prod
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
   # ==============================================================
   # JPA / Hibernate Configuration
   # ==============================================================
@@ -43,10 +47,3 @@ spring:
 # Active profile: override per environment
 # ==============================================================
 # Default: dev profile. Override with --spring.profiles.active=prod
----
-spring:
-  config:
-    activate:
-      on-profile: default
-  profiles:
-    active: dev

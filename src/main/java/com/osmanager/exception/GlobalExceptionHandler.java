@@ -1,7 +1,11 @@
 package com.osmanager.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -37,6 +41,8 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // ==============================================================
     // ERROR RESPONSE BODY — Structured API error format
@@ -141,8 +147,17 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+        // Erros do próprio Spring MVC (parâmetro ausente, método não suportado, rota inexistente...)
+        // implementam ErrorResponse e já carregam o status HTTP correto (4xx).
+        // Sem este desvio, o catch-all os transformaria em 500.
+        if (ex instanceof ErrorResponse errorResponse) {
+            HttpStatusCode status = errorResponse.getStatusCode();
+            return buildError(HttpStatus.valueOf(status.value()), errorResponse.getBody().getDetail());
+        }
+
         // SECURITY: Never expose ex.getMessage() to the client in production.
-        // Log it internally (use a logger here in real code) and return generic message.
+        // O detalhe vai para o log; o cliente recebe só uma mensagem genérica.
+        log.error("Unhandled exception", ex);
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred. Please try again later.");
     }
